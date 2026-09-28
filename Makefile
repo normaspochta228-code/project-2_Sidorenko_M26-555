@@ -16,3 +16,8 @@ package-install:
 make lint:
 	poetry run ruff check .
 
+make lint-fix:
+	poetry run ruff check . --fix
+
+
+

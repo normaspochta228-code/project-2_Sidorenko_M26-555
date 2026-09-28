@@ -1,19 +1,14 @@
 import shlex
+
 import prompt
-from primitive_db.utils import load_metadata, save_metadata, DB_META_JSON
+
 from primitive_db.core import create_table, drop_table
+from primitive_db.utils import DB_META_JSON, load_metadata, print_help, save_metadata
+
 
 def run():
 
-    help_message = '''\n***Процесс работы с таблицей***
-Функции:
-<command> create_table <имя_таблицы> <столбец1:тип> <столбец2:тип> .. - создать таблицу
-<command> list_tables - показать список всех таблиц
-<command> drop_table <имя_таблицы> - удалить таблицу
-<command> exit - выход из программы
-<command> help - справочная информация'''
-
-    print(help_message)
+    print_help()
 
     while True:
 
@@ -29,7 +24,7 @@ def run():
             continue
 
         command = args[0].lower()
-        
+
         metadata = load_metadata()
 
         if command == 'create_table':
@@ -44,7 +39,7 @@ def run():
                 save_metadata(DB_META_JSON, updated_meta)
 
         elif command == 'list_tables':
-            print('- ' + '\n- '.join([table for table in metadata.keys()]))
+            print('- ' + '\n- '.join([table for table in metadata]))
 
         elif command == 'drop_table':
             if len(args) != 2:
@@ -59,7 +54,7 @@ def run():
 
 
         elif command == 'help':
-            print(help_message)
+            print_help()
 
 
         elif command == 'exit':
