@@ -1,9 +1,11 @@
 import os
 
+from decorators import confirm_action, handle_db_errors, log_time
 from primitive_db.utils import DATA_DIR
 
 VALID_TYPES = {'int', 'str', 'bool'}
 
+@handle_db_errors
 def create_table(metadata: dict, table_name: str, columns: list[str]) -> dict | None:
     if table_name in metadata:
         print(f'Ошибка: Таблица "{table_name}" уже существует.')
@@ -14,16 +16,14 @@ def create_table(metadata: dict, table_name: str, columns: list[str]) -> dict | 
 
     for col in columns:
         if ':' not in col:
-            print(f'Ошибка: Неверный формат колонки "{col}". Используйте формат name:type')
-            return None
+            raise ValueError(f'Ошибка: Неверный формат колонки "{col}". Используйте формат name:type')
         
         col_name, col_type = col.split(':')
         col_name = col_name.strip()
         col_type = col_type.strip().lower()
 
         if col_type not in VALID_TYPES:
-            print(f'Ошибка: Неподдерживаемый тип данных "{col_type}" для колонки "{col_name}". Разрешены только: {VALID_TYPES}')
-            return None
+            raise ValueError(f'Ошибка: Неподдерживаемый тип данных "{col_type}" для колонки "{col_name}". Разрешены только: {VALID_TYPES}')
         
         if col_name.lower() == 'id':
             continue
@@ -38,19 +38,17 @@ def create_table(metadata: dict, table_name: str, columns: list[str]) -> dict | 
     print(f'Таблица "{table_name}" успешно создана со столбцами: {', '.join(columns)}')
     return metadata
 
-
+@handle_db_errors
+@confirm_action('Удаление таблицы')
 def drop_table(metadata: dict, table_name: str) -> dict | None:
-    try:
-        metadata.pop(table_name)
-        os.remove(os.path.join(DATA_DIR, f'{table_name}.json'))
-        print(f'Таблица "{table_name}" успешно удалена.')
-        return metadata
-    except (KeyError, FileNotFoundError):
-        print(f'Ошибка: Таблицы "{table_name}" не существует.')
-        return None
+    metadata.pop(table_name)
+    os.remove(os.path.join(DATA_DIR, f'{table_name}.json'))
+    print(f'Таблица "{table_name}" успешно удалена.')
+    return metadata
+    
 
-
-
+@handle_db_errors
+@log_time
 def insert(metadata: dict, table_name: str, table_data: list, values: list[str]) -> list | None:
     if table_name not in metadata:
         print(f'Ошибка: Таблицы "{table_name}" не существует.')
@@ -61,8 +59,7 @@ def insert(metadata: dict, table_name: str, table_data: list, values: list[str])
     expected_cols = columns[1:]
 
     if len(values) != len(expected_cols):
-        print(f'Ошибка: Неверное количество значений. Ожидается: {len(expected_cols)}, передано: {len(values)}.')
-        return None
+        raise ValueError(f'Ошибка: Неверное количество значений. Ожидается: {len(expected_cols)}, передано: {len(values)}.')
 
     new_row = {}
     
@@ -80,33 +77,30 @@ def insert(metadata: dict, table_name: str, table_data: list, values: list[str])
         # Убираем лишние кавычки
         val_cleaned = val_str.strip("'\"")
 
-        try:
-            if col_type == 'int':
-                new_row[col_name] = int(val_cleaned)
+        if col_type == 'int':
+            new_row[col_name] = int(val_cleaned)
 
-            elif col_type == 'bool':
-                if val_cleaned.lower() in ('true', '1'):
-                    new_row[col_name] = True
+        elif col_type == 'bool':
+            if val_cleaned.lower() in ('true', '1'):
+                new_row[col_name] = True
 
-                elif val_cleaned.lower() in ('false', '0'):
-                    new_row[col_name] = False
-                else:
-                    raise ValueError
+            elif val_cleaned.lower() in ('false', '0'):
+                new_row[col_name] = False
+            else:
+                raise ValueError(f'Ошибка: Значение "{val_str}" не соответствует типу "{col_type}" для колонки "{col_name}".')
 
-            elif col_type == 'str':
-                new_row[col_name] = str(val_cleaned)
+        elif col_type == 'str':
+            new_row[col_name] = str(val_cleaned)
 
-            else: 
-                raise ValueError
+        else: 
+            raise ValueError(f'Ошибка: Значение "{val_str}" не соответствует типу "{col_type}" для колонки "{col_name}".')
 
-        except ValueError:
-            print(f'Ошибка: Значение "{val_str}" не соответствует типу "{col_type}" для колонки "{col_name}".')
-            return None
 
     table_data.append(new_row)
     print('Запись успешно добавлена.')
     return table_data
 
+@log_time
 def select(table_data: list, where_clause: dict | None = None) -> list:
     if not where_clause:
         return table_data
@@ -122,6 +116,8 @@ def select(table_data: list, where_clause: dict | None = None) -> list:
             filtered_data.append(row)
     return filtered_data
 
+@handle_db_errors
+@log_time
 def update(table_data: list, set_clause: dict, where_clause: dict | None = None) -> list:
     updated_count = 0
     for row in table_data:
@@ -141,6 +137,8 @@ def update(table_data: list, set_clause: dict, where_clause: dict | None = None)
     print(f'Обновлено записей: {updated_count}.')
     return table_data
 
+
+@confirm_action('Удаление данных')
 def delete(table_data: list, where_clause: dict | None = None) -> list:
     if not where_clause:
         count = len(table_data)

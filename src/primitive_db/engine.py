@@ -1,15 +1,26 @@
 import shlex
-from prettytable import PrettyTable
+
 import prompt
-import traceback
-from primitive_db.core import create_table, drop_table, insert, select, delete, update
-from primitive_db.utils import DB_META_JSON, load_metadata, print_help, save_metadata, load_table_data, save_table_data
+from prettytable import PrettyTable
+
+from cache import create_cacher
+from primitive_db.core import create_table, delete, drop_table, insert, select, update
 from primitive_db.parse import parse_clause
+from primitive_db.utils import (
+    DB_META_JSON,
+    load_metadata,
+    load_table_data,
+    print_help,
+    save_metadata,
+    save_table_data,
+)
 
 
 def run():
 
     print_help()
+
+    db_cache = create_cacher()
 
     while True:
 
@@ -27,6 +38,10 @@ def run():
         command = args[0].lower()
 
         metadata = load_metadata()
+
+        if command in ("create", "drop", "insert", "update", "delete"):
+            # сброс кеша
+            db_cache = create_cacher()
 
         if command == 'create_table':
             if len(args) < 2:
@@ -76,10 +91,10 @@ def run():
             if table_name not in metadata:
                 print(f'Ошибка: Таблицы "{table_name}" не существует.')
                 continue
-                
-            table_data = load_table_data(table_name)
-            where_dict = None
+
+            cache_key = user_input.strip().lower()
             
+            where_dict = None
             if len(args) > 3:
                 if args[3].lower() == 'where':
                     where_dict = parse_clause(args[4:])
@@ -87,7 +102,11 @@ def run():
                     print('Ошибка: Ожидалось ключевое слово "where".')
                     continue
 
-            results = select(table_data, where_dict)
+            # одноразовая функция для функции кеша
+            fetch_data = lambda t=table_name, w=where_dict: select(load_table_data(t), w)
+
+
+            results = db_cache(cache_key, fetch_data)
             
             table = PrettyTable()
             table.field_names = [col['name'] for col in metadata[table_name]['columns']]
@@ -105,7 +124,6 @@ def run():
                 print(f'Ошибка: Таблицы "{table_name}" не существует.')
                 continue
 
-            # Ищем где начинается where
             try:
                 where_idx = [x.lower() for x in args].index('where')
                 set_tokens = args[3:where_idx]
