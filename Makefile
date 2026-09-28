@@ -13,11 +13,8 @@ publish:
 package-install:
 	powershell -Command "pip install (Get-Item dist/*.whl).FullName"
 
-make lint:
+lint:
 	poetry run ruff check .
 
-make lint-fix:
+lint-fix:
 	poetry run ruff check . --fix
-
-
-
