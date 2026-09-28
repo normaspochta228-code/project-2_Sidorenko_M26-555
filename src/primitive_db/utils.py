@@ -1,10 +1,11 @@
 import json
 import os
 
-DB_META_JSON = 'db_meta.json'
-DATA_DIR = 'data'
+from primitive_db.constants import DATA_DIR, DB_META_JSON
+
 
 def load_metadata(filepath: str = DB_META_JSON) -> list | dict:
+    """Load Database metadata"""
     try:
         with open(filepath, 'r', encoding='utf-8') as file:
             return json.load(file)
@@ -12,11 +13,13 @@ def load_metadata(filepath: str = DB_META_JSON) -> list | dict:
         return {}
 
 def save_metadata(filepath: str, data: list | dict) -> None:
+    """Save Database metadata"""
     with open(filepath, 'w', encoding='utf-8') as file:
         json.dump(data, file, ensure_ascii=False, indent=2)
 
 
 def load_table_data(table_name: str) -> list:
+    """Load table data"""
     os.makedirs(DATA_DIR, exist_ok=True)
     filepath = os.path.join(DATA_DIR, f'{table_name}.json')
     try:
@@ -26,6 +29,7 @@ def load_table_data(table_name: str) -> list:
         return []
 
 def save_table_data(table_name: str, data: list) -> None:
+    """Save table data"""
     os.makedirs(DATA_DIR, exist_ok=True)
     filepath = os.path.join(DATA_DIR, f'{table_name}.json')
     with open(filepath, 'w', encoding='utf-8') as file:

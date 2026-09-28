@@ -4,10 +4,10 @@ import prompt
 from prettytable import PrettyTable
 
 from cache import create_cacher
+from primitive_db.constants import DB_META_JSON
 from primitive_db.core import create_table, delete, drop_table, insert, select, update
 from primitive_db.parse import parse_clause
 from primitive_db.utils import (
-    DB_META_JSON,
     load_metadata,
     load_table_data,
     print_help,
@@ -17,6 +17,7 @@ from primitive_db.utils import (
 
 
 def run():
+    """Главный интерфейс приложения; Вызывает все функции описанные в core"""
 
     print_help()
 

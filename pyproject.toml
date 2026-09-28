@@ -1,9 +1,9 @@
 [project]
 name = "project-2-sidorenko-m26-555"
 version = "0.1.0"
-description = ""
+description = "Simple Database Service"
 authors = [
-    {name = "Nikita",email = "normaspochta@gmail.com"}
+    {name = "Nikita Sidorenko",email = "normaspochta@gmail.com"}
 ]
 requires-python = ">=3.12"
 dependencies = [

@@ -1,12 +1,13 @@
 import os
 
 from decorators import confirm_action, handle_db_errors, log_time
-from primitive_db.utils import DATA_DIR
+from primitive_db.constants import DATA_DIR
 
 VALID_TYPES = {'int', 'str', 'bool'}
 
 @handle_db_errors
 def create_table(metadata: dict, table_name: str, columns: list[str]) -> dict | None:
+    """Create table"""
     if table_name in metadata:
         print(f'Ошибка: Таблица "{table_name}" уже существует.')
         return None
@@ -41,6 +42,7 @@ def create_table(metadata: dict, table_name: str, columns: list[str]) -> dict | 
 @handle_db_errors
 @confirm_action('Удаление таблицы')
 def drop_table(metadata: dict, table_name: str) -> dict | None:
+    """Drop table"""
     metadata.pop(table_name)
     os.remove(os.path.join(DATA_DIR, f'{table_name}.json'))
     print(f'Таблица "{table_name}" успешно удалена.')
@@ -50,6 +52,7 @@ def drop_table(metadata: dict, table_name: str) -> dict | None:
 @handle_db_errors
 @log_time
 def insert(metadata: dict, table_name: str, table_data: list, values: list[str]) -> list | None:
+    """Insert data to table"""
     if table_name not in metadata:
         print(f'Ошибка: Таблицы "{table_name}" не существует.')
         return None
@@ -102,6 +105,7 @@ def insert(metadata: dict, table_name: str, table_data: list, values: list[str])
 
 @log_time
 def select(table_data: list, where_clause: dict | None = None) -> list:
+    """Select data from table"""
     if not where_clause:
         return table_data
 
@@ -119,6 +123,7 @@ def select(table_data: list, where_clause: dict | None = None) -> list:
 @handle_db_errors
 @log_time
 def update(table_data: list, set_clause: dict, where_clause: dict | None = None) -> list:
+    """Update data in table"""
     updated_count = 0
     for row in table_data:
         match = True
@@ -140,6 +145,7 @@ def update(table_data: list, set_clause: dict, where_clause: dict | None = None)
 
 @confirm_action('Удаление данных')
 def delete(table_data: list, where_clause: dict | None = None) -> list:
+    """Delete data from table"""
     if not where_clause:
         count = len(table_data)
         table_data.clear()
